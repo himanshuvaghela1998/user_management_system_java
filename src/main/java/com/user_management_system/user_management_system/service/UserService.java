@@ -4,6 +4,9 @@ import com.user_management_system.user_management_system.dto.LoginRequest;
 import com.user_management_system.user_management_system.dto.RegisterRequest;
 import com.user_management_system.user_management_system.dto.UserResponse;
 import com.user_management_system.user_management_system.entity.User;
+import com.user_management_system.user_management_system.exception.EmailAlreadyExistsException;
+import com.user_management_system.user_management_system.exception.ResourceNotFoundException;
+import com.user_management_system.user_management_system.exception.BadRequestException;
 import com.user_management_system.user_management_system.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +30,7 @@ public class UserService {
 //            throw new RuntimeException("Email Can not be null");
 //        }
         if (repository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists");
+            throw new EmailAlreadyExistsException("User with email '" + request.getEmail() + "' already exists");
         }
 
         User user = new User();
@@ -51,10 +54,10 @@ public class UserService {
 //    }
 
     public String login(LoginRequest request) {
-        User user = repository.findByEmail(request.getEmail()).orElseThrow(() -> new RuntimeException("Invalid email and password"));
+        User user = repository.findByEmail(request.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + request.getEmail()));
 
         if (!user.getPassword().equals(request.getPassword())) {
-            throw new RuntimeException("Invalid email or password");
+            throw new BadRequestException("Invalid password");
         }
 
         return "Login successfully";
@@ -70,7 +73,7 @@ public class UserService {
         return repository.findAll();
     }
 
-    //Get User By Id
+    //Get User By ID
     public User getUserById(Long id) {
         return repository.findById(id).orElseThrow(() -> new RuntimeException("User Not Founder!!"));
     }
