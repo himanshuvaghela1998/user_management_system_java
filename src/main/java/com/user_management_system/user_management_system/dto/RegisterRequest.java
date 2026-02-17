@@ -2,6 +2,8 @@ package com.user_management_system.user_management_system.dto;
 
 import jakarta.validation.constraints.*;
 
+import javax.management.relation.Role;
+
 public class RegisterRequest {
 
     @NotBlank(message = "User name is required!")

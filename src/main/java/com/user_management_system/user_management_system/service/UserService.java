@@ -8,7 +8,11 @@ import com.user_management_system.user_management_system.exception.EmailAlreadyE
 import com.user_management_system.user_management_system.exception.ResourceNotFoundException;
 import com.user_management_system.user_management_system.exception.BadRequestException;
 import com.user_management_system.user_management_system.repository.UserRepository;
+import com.user_management_system.user_management_system.entity.Role;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.user_management_system.user_management_system.service.JwtService;
 
 import java.util.List;
 
@@ -19,16 +23,19 @@ public class UserService {
 
     private final UserRepository repository;
 
-    public UserService(UserRepository repository) {
+    private JwtService jwtService;
+
+    private PasswordEncoder passwordEncoder;
+
+    public UserService(UserRepository repository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.repository = repository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     //Register
     public UserResponse register(RegisterRequest request) {
 
-//        if(validateEmail(request)) {
-//            throw new RuntimeException("Email Can not be null");
-//        }
         if (repository.findByEmail(request.getEmail()).isPresent()) {
             throw new EmailAlreadyExistsException("User with email '" + request.getEmail() + "' already exists");
         }
@@ -37,15 +44,19 @@ public class UserService {
         user.setUserName(request.getUsername());
         user.setEmail(request.getEmail());
         user.setAddress(request.getAddress());
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(Role.USER);
 
         repository.save(user);
 
+        var jwtToken = jwtService.generateToken(user.getEmail());
         return new UserResponse(
                 user.getId(),
                 user.getUserName(),
                 user.getEmail(),
-                user.getAddress()
+                user.getAddress(),
+                user.getRole().name(),
+                jwtToken
         );
     }
 
@@ -56,11 +67,13 @@ public class UserService {
     public String login(LoginRequest request) {
         User user = repository.findByEmail(request.getEmail()).orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + request.getEmail()));
 
-        if (!user.getPassword().equals(request.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BadRequestException("Invalid password");
         }
 
-        return "Login successfully";
+        String token = jwtService.generateToken(user.getEmail());
+
+        return token;
     }
 
     //Create or Update
