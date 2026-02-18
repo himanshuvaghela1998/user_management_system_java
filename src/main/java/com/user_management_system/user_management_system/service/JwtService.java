@@ -1,5 +1,6 @@
 package com.user_management_system.user_management_system.service;
 
+import com.user_management_system.user_management_system.entity.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
